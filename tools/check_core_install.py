@@ -1,20 +1,27 @@
-"""Verify a numpy-only install of display-patterns (§spec:package-shape).
+"""Verify the numpy-only core footprint (§spec:package-shape).
 
-Run with the package installed WITHOUT extras. Confirms the core imports
-and renders a checkerboard using numpy alone, and that no chart or IO
-dependency is present in the environment.
+Renders a checkerboard and asserts the import path pulled in no chart
+or IO dependency. By default the environment is first required to be
+core-only (no extras installed) — the wheel-install CI job's mode.
+``--skip-env-check`` drops that gate so the same probe runs in an
+all-extras environment (the test suite's mode), where the post-render
+module sweep is the live assertion.
 """
 
 import importlib.util
 import sys
 
-FORBIDDEN_DISTS = ("colour", "PIL", "yaml", "tifffile")
+# Import names of every dependency priced into an extra
+# ([project.optional-dependencies] in pyproject.toml). The probe fails
+# if importing or rendering the core loads any of them.
+FORBIDDEN_MODULES = ("colour", "PIL", "scipy", "tifffile", "yaml")
 
 
 def main() -> None:
-    for name in FORBIDDEN_DISTS:
-        if importlib.util.find_spec(name) is not None:
-            sys.exit(f"{name} is installed; this check requires a core-only env")
+    if "--skip-env-check" not in sys.argv[1:]:
+        for name in FORBIDDEN_MODULES:
+            if importlib.util.find_spec(name) is not None:
+                sys.exit(f"{name} is installed; this check requires a core-only env")
 
     import numpy as np
 
@@ -28,10 +35,13 @@ def main() -> None:
     assert pattern.dtype == np.uint16
     assert set(np.unique(pattern)) == {0, 2048, 4095}
 
-    loaded = [m for m in sys.modules if m.split(".")[0] in FORBIDDEN_DISTS]
-    assert not loaded, f"core import pulled in heavy deps: {loaded}"
+    assert "display_patterns.charts" not in sys.modules, (
+        "core rendering imported the charts subpackage"
+    )
+    loaded = sorted(m for m in sys.modules if m.split(".")[0] in FORBIDDEN_MODULES)
+    assert not loaded, f"core rendering imported heavy deps: {loaded}"
 
-    sys.stdout.write("core-only install renders a checkerboard with numpy alone\n")
+    print("core rendering loads numpy alone")
 
 
 if __name__ == "__main__":
