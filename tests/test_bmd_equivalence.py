@@ -3,8 +3,14 @@ Verbatim-move equivalence against bmd-signal-gen (§spec:extraction).
 
 For identical parameters, the moved modules render arrays equal to the
 bmd-signal-gen in-tree implementation, array for array. The source repo
-is located via ``BMD_SIGNAL_GEN_REPO`` or as a sibling checkout; the
-tests skip when it is absent (for example in CI).
+is located via ``BMD_SIGNAL_GEN_REPO`` or by finding a ``bmd-signal-gen``
+checkout beside any ancestor directory (which covers both the repo root
+and a nested worktree). The tests skip only when neither resolves; CI
+runs them in a dedicated job that checks out the source repo.
+
+This module is scaffolding for the extraction spine's equivalence
+claim — retire it when the rendering-model reshape lands
+(``§road:render-reshape``).
 
 The bmd_sg package initializer imports the DeckLink layer, which needs
 device dependencies this repo does not install. A stub package entry
@@ -25,24 +31,34 @@ import pytest
 CHART_YAML_PATH = Path(__file__).parent / "data" / "two_patch.yaml"
 
 
-def _bmd_repo() -> Path:
+def _bmd_repo() -> Path | None:
     env = os.environ.get("BMD_SIGNAL_GEN_REPO")
     if env:
-        return Path(env)
-    return Path(__file__).resolve().parents[2] / "bmd-signal-gen"
+        candidates = [Path(env)]
+    else:
+        candidates = [
+            ancestor / "bmd-signal-gen" for ancestor in Path(__file__).resolve().parents
+        ]
+    for candidate in candidates:
+        if (candidate / "bmd_sg").is_dir():
+            return candidate
+    return None
 
+
+_BMD_REPO = _bmd_repo()
 
 pytestmark = pytest.mark.skipif(
-    not (_bmd_repo() / "bmd_sg").is_dir(),
-    reason="bmd-signal-gen source checkout not available",
+    _BMD_REPO is None,
+    reason="bmd-signal-gen checkout not found (set BMD_SIGNAL_GEN_REPO)",
 )
 
 
 @pytest.fixture(scope="module")
 def bmd_sg_on_path() -> Iterator[None]:
     """Make bmd_sg importable without running its package initializer."""
+    assert _BMD_REPO is not None
     stub = types.ModuleType("bmd_sg")
-    stub.__path__ = [str(_bmd_repo() / "bmd_sg")]
+    stub.__path__ = [str(_BMD_REPO / "bmd_sg")]
     sys.modules["bmd_sg"] = stub
     try:
         yield
