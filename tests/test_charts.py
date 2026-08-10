@@ -57,3 +57,11 @@ def test_tiff_roundtrip(tmp_path: Path) -> None:
     assert metadata.bit_depth == 12
     assert metadata.patches is not None
     assert len(metadata.patches) == 2
+
+
+def test_every_charts_export_resolves() -> None:
+    """Each name in ``__all__`` resolves through the lazy export table."""
+    import display_patterns.charts as charts
+
+    for name in charts.__all__:
+        assert getattr(charts, name) is not None
