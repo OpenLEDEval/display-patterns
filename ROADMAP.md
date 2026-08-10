@@ -13,8 +13,11 @@ is checkable before any reshaping (§spec:extraction).
 
 ### First release §road:first-release
 
-Publish 0.1 to PyPI via trusted publishing (configuring the PyPI
-project is a human step). §spec:package-shape.
+Publish 0.1 to PyPI via trusted publishing. §spec:package-shape.
+Blocked — deferred until the first rounds of cross-repo integration
+testing complete and the PyPI org is confirmed (pending the possible
+OpenLEDEval → OpenDisplayEval rename); consumers integrate via a git
+dependency meanwhile.
 
 **Verify:** In a fresh environment, `pip install display-patterns`
 imports and renders a checkerboard with numpy alone; `pip install
