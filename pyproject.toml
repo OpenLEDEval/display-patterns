@@ -36,8 +36,17 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-charts = []
-io = []
+charts = [
+    "colour-science>=0.4.6",
+    "pillow>=12.1.1",
+    "pyyaml>=6.0.1",
+    # Not imported directly: colour-science uses scipy opportunistically
+    # (CCT/chromatic adaptation) and warns at import when it is absent.
+    "scipy>=1.16.3",
+]
+io = [
+    "tifffile>=2024.8.30",
+]
 
 [project.urls]
 Homepage = "https://github.com/OpenLEDEval/display-patterns"
