@@ -1,6 +1,7 @@
 [project]
 name = "display-patterns"
-version = "0.0.0"
+# Version derives from git tags (hatch-vcs); flywheel cuts the tags.
+dynamic = ["version"]
 description = "Deterministic display test patterns, device-free and exact"
 authors = [
     { name = "Ritchie Argue", email = "4462072+repentsinner@users.noreply.github.com" },
@@ -55,8 +56,11 @@ Issues = "https://github.com/OpenLEDEval/display-patterns/issues"
 Changelog = "https://github.com/OpenLEDEval/display-patterns/blob/main/CHANGELOG.md"
 
 [build-system]
-requires = ["hatchling"]
+requires = ["hatchling", "hatch-vcs"]
 build-backend = "hatchling.build"
+
+[tool.hatch.version]
+source = "vcs"
 
 [tool.hatch.build.targets.wheel]
 packages = ["display_patterns"]
