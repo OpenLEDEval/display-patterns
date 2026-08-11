@@ -6,7 +6,11 @@ bmd-signal-gen in-tree implementation, array for array. The source repo
 is located via ``BMD_SIGNAL_GEN_REPO`` or by finding a ``bmd-signal-gen``
 checkout beside any ancestor directory (which covers both the repo root
 and a nested worktree). The tests skip only when neither resolves; CI
-runs them in a dedicated job that checks out the source repo.
+runs them in a dedicated job that checks out the source repo pinned to
+its last pre-split commit — from bmd-signal-gen PR #20 onward the
+in-tree modules are shims of this package, so a checkout newer than the
+pin only compares the library to itself. For a meaningful local run,
+point ``BMD_SIGNAL_GEN_REPO`` at a pre-split checkout.
 
 This module is scaffolding for the extraction spine's equivalence
 claim — retire it when the rendering-model reshape lands
