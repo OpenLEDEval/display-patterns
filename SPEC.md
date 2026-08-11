@@ -79,16 +79,26 @@ privileging either would force the other through a conversion that
 manufactures error. The library owns geometry; meaning stays with the
 caller.
 
+Catalog entries share one calling convention: pattern parameters, a
+`frame` index, and the `xp`/`device` keywords. Rasters are HWC (height,
+width, channels); integer patterns return the namespace's `uint16` at
+the stated bit depth; a pattern whose output is more than one plane
+(the counter panel's overlay + mask) returns a documented tuple. **Why
+HWC and not the source runtime's NCHW:** these are images consumers
+composite and encode, not batched graph payloads; the batch and
+channel-first axes belong to the runtime that needs them.
+
 ## Catalog §spec:catalog
 
 *Status: complete*
 
 The core catalog, renderable with numpy alone (§req:success-criteria):
 
-- **Solid** and **checkerboard** fills with the established color
-  expansion (one color solid, two alternating, four in a 2×2 tile),
-  bounded by an optional **region of interest**, validated against
-  the stated bit depth with a specific error for out-of-range values.
+- **Checkerboard** fills (one entry point; a single color renders a
+  solid) with the established color expansion (two alternating, four
+  in a 2×2 tile), bounded by an optional **region of interest**,
+  validated against the stated bit depth with a specific error for
+  out-of-range values.
 - **Temporal-alignment counter panel** — a frame counter encoded as
   binary bit-cells in a title-safe row, with the matching decoder.
   Encode and decode ship together so any consumer can render the
@@ -123,9 +133,11 @@ The initial code was bmd-signal-gen's `bmd_sg/image_generators/` and
 `bmd_sg/charts/` with their tests, moved verbatim before any reshaping
 (§req:constraints). bmd-signal-gen adopted the package at its v0.2.1
 behind one release cycle of deprecation shims, with bit-identical CLI
-output verified array-for-array against its last pre-split commit
-(§req:success-criteria); the shims live on its side
-(`§road:pattern-library` there).
+output verified array-for-array against its last pre-split commit —
+`0640015fc8b851d8db987eb5d81f1bc003ddeffa`, the pin any re-check needs,
+because every later bmd-signal-gen commit ships shims of this package
+and compares the library to itself (§req:success-criteria); the shims
+live on its side (`§road:pattern-library` there).
 
 **Why verbatim first:** bit-identical adoption is checkable only
 against an unchanged implementation. With that claim banked, the

@@ -22,5 +22,6 @@ dependency meanwhile.
 **Verify:** In a fresh environment, `pip install display-patterns`
 imports and renders a checkerboard with numpy alone; `pip install
 "display-patterns[charts,io]"` renders a YAML-authored chart and
-writes it to TIFF; for identical parameters the rendered arrays equal
-bmd-signal-gen's in-tree output array-for-array.
+writes it to TIFF. (The array-for-array equivalence claim against
+bmd-signal-gen is banked and pinned in §spec:extraction; its
+scaffolding retired with the rendering-model reshape.)

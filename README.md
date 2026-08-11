@@ -78,7 +78,9 @@ write_chart_tiff("my_chart.tiff", image, layout)
 - `display_patterns` / `display_patterns.patterns` — the core catalog:
   `checkerboard` (one color renders a solid), `ROI`, `ColorRangeError`,
   and the temporal-alignment counter panel (`PanelGeometry`,
-  `render_counter_panel`, `decode_counter`). Numpy only.
+  `render_counter_panel`, `decode_counter`). The root is the canonical
+  import surface; no dependency beyond numpy — torch renders through
+  the `xp` parameter without ever being required.
 - `display_patterns.image_generators` — extraction-era class surface
   (`PatternGenerator`), kept for existing consumers; delegates to the
   catalog.
