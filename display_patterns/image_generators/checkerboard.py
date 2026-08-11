@@ -62,34 +62,19 @@ class PatternGenerator:
         self.height = height
         self.bit_depth = bit_depth
 
+        # Materialized (rather than left None for the pure function's
+        # default) because `self.roi` is legacy attribute surface.
         if roi is None:
             self.roi = ROI(0, 0, self.width, self.height)
         else:
             self.roi = roi
 
     def generate(self, colors: ArrayLike) -> np.ndarray:
-        """Generate a checkerboard pattern with the specified colors.
+        """Render the pattern for ``colors``.
 
-        Accepts 1-4 colors with the established expansion (one color
-        solid, two alternating, four mapped to the 2x2 tile).
-
-        Parameters
-        ----------
-        colors : ArrayLike
-            Color array; shape (3,), or (N, 3) with N in 1..4.
-
-        Returns
-        -------
-        np.ndarray
-            Generated pattern image with shape (height, width, 3),
-            dtype uint16.
-
-        Raises
-        ------
-        RuntimeError
-            If colors array has invalid shape.
-        ColorRangeError
-            If color values exceed bit depth limits.
+        Delegates to :func:`display_patterns.patterns.checkerboard`,
+        which documents the color expansion, return shape, and raised
+        errors.
         """
         return checkerboard(
             colors,
