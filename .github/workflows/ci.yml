@@ -57,6 +57,11 @@ jobs:
         with:
           repository: OpenLEDEval/bmd-signal-gen
           path: bmd-signal-gen
+          # Last pre-split main tip. From bmd-signal-gen PR #20 onward the
+          # in-tree modules are re-export shims of this package, so tracking
+          # its default branch would compare the library to itself. Retire
+          # this job with the equivalence scaffolding (§road:render-reshape).
+          ref: 0640015fc8b851d8db987eb5d81f1bc003ddeffa
       - uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
         with:
           python-version: "3.12"
