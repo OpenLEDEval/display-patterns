@@ -70,6 +70,10 @@ class PanelGeometry:
             small to give each cell at least one pixel (a sub-pixel cell
             renders an undecodable panel).
         """
+        if bits < 1:
+            raise ValueError(
+                f"bits {bits} is out of range: a counter needs at least one bit-cell."
+            )
         for label, value in (("width", width), ("height", height)):
             if not 1 <= value <= _MAX_DIMENSION:
                 raise ValueError(
@@ -151,8 +155,8 @@ def render_counter_panel(
         1 over the panel's bounding box and 0 outside it, so a
         composite touches only the panel.
     """
-    overlay = _backend.full(xp, geometry.overlay_shape, 0.0, xp.float32, device)
-    mask = _backend.full(xp, geometry.mask_shape, 0.0, xp.float32, device)
+    overlay = _backend.zeros(xp, geometry.overlay_shape, xp.float32, device)
+    mask = _backend.zeros(xp, geometry.mask_shape, xp.float32, device)
 
     r0, r1 = geometry.panel_rows
     c0, c1 = geometry.panel_cols
@@ -174,9 +178,14 @@ def decode_counter(overlay: Any, geometry: PanelGeometry) -> int:
     thresholds at the value midpoint, so it survives a lossy round trip
     (wire encode, resample). ``overlay`` is any ``(height, width, 3)``
     array in the [0, 1] range convention, on any backend."""
+    # One gather of every cell centre, one device-to-host transfer:
+    # per-bit scalar reads would sync a device-resident overlay once per
+    # bit (§req:success-criteria — no copy through host memory per bit).
+    centres = [geometry.cell_centre(index) for index in range(geometry.bits)]
+    rows = [row for row, _ in centres]
+    cols = [col for _, col in centres]
+    samples = _backend.to_host(overlay[rows, cols, 0])
     value = 0
-    for index in range(geometry.bits):
-        row, col = geometry.cell_centre(index)
-        bit = 1 if float(overlay[row, col, 0]) >= _DECODE_THRESHOLD else 0
-        value = (value << 1) | bit
+    for sample in samples:
+        value = (value << 1) | (1 if float(sample) >= _DECODE_THRESHOLD else 0)
     return value
