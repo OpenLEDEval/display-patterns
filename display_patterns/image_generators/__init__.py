@@ -1,9 +1,9 @@
 """
-Image generators for BMD signal generation.
+Extraction-era pattern surface, kept for existing consumers.
 
-This package provides various pattern and image generation utilities for BMD
-DeckLink devices, including checkerboard patterns, solid colors, and other
-test patterns commonly used in video production and display testing.
+Re-exports the checkerboard class surface bmd-signal-gen adopted at the
+extraction (§spec:extraction). New code should use the frame-indexed
+catalog in :mod:`display_patterns.patterns`.
 """
 
 from display_patterns.image_generators.checkerboard import (
