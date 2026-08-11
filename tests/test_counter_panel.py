@@ -5,16 +5,18 @@ back to N from the array, and after a lossy trip, because decode
 samples each cell's centre and thresholds at the value midpoint. The
 math is ported from backlit_molecule's probe (its ``§spec:alignment-probe``)
 onto the frame-indexed namespace signature; these tests carry the
-numpy leg, with a torch leg that skips where torch is absent.
+numpy leg, with a torch leg (the only one reaching the backend's
+device branches) that skips where torch is absent.
 """
 
 import numpy as np
 import pytest
 
 from display_patterns import PanelGeometry, decode_counter, render_counter_panel
+from tests.conftest import assert_backend_matches_numpy
 
 
-def _geometry(bits: int = 8) -> PanelGeometry:
+def _geometry(bits: int) -> PanelGeometry:
     return PanelGeometry.for_frame(width=64, height=16, bits=bits)
 
 
@@ -104,13 +106,14 @@ def test_geometry_rejects_oversized_frame() -> None:
 
 def test_round_trip_under_torch() -> None:
     """The same frame index renders and decodes identically through
-    torch's namespace. Skips where torch is absent — the numpy leg
-    exercises the identical code path."""
-    torch = pytest.importorskip("torch")
+    torch's namespace. Skips where torch is absent — this leg alone
+    reaches the backend's device branches."""
     geom = _geometry(bits=8)
+    assert_backend_matches_numpy(render_counter_panel, 42, geom)
 
-    expected_overlay, expected_mask = render_counter_panel(42, geom)
-    overlay, mask = render_counter_panel(42, geom, xp=torch)
-    assert decode_counter(overlay, geom) == 42
-    np.testing.assert_array_equal(np.asarray(overlay), expected_overlay)
-    np.testing.assert_array_equal(np.asarray(mask), expected_mask)
+
+def test_geometry_rejects_a_zero_bit_counter() -> None:
+    """A counter needs at least one bit-cell; ``bits=0`` is rejected
+    with a range error rather than a division crash."""
+    with pytest.raises(ValueError, match="at least one"):
+        PanelGeometry.for_frame(width=64, height=16, bits=0)

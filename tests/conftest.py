@@ -1,65 +1,27 @@
-"""
-Pytest fixtures for display-patterns tests.
+"""Shared test scaffolding for display-patterns."""
 
-Moved from bmd-signal-gen's test fixtures, trimmed to the pattern
-fixtures the extracted modules use (the DeckLink fixtures stayed
-behind with the device tool).
-"""
+from collections.abc import Callable
+from typing import Any
 
+import numpy as np
 import pytest
 
-from display_patterns.image_generators.checkerboard import ROI, PatternGenerator
 
+def assert_backend_matches_numpy(
+    render: Callable[..., Any], *args: Any, **kwargs: Any
+) -> None:
+    """Render under torch and assert equality with the numpy result.
 
-@pytest.fixture
-def pattern_generator_12bit() -> PatternGenerator:
+    Skips where torch is absent (torch is never a dependency of this
+    package — the namespace is duck-typed). Handles entry points that
+    return one array or a tuple of arrays. Note the numpy leg does not
+    reach the ``device``/``to`` backend branches; only this helper does,
+    where torch is installed.
     """
-    Create a 12-bit pattern generator for testing.
-
-    Returns
-    -------
-    PatternGenerator
-        Generator configured for 1920x1080 at 12-bit depth.
-    """
-    return PatternGenerator(
-        bit_depth=12,
-        width=1920,
-        height=1080,
-        roi=ROI(x=0, y=0, width=1920, height=1080),
-    )
-
-
-@pytest.fixture
-def pattern_generator_8bit() -> PatternGenerator:
-    """
-    Create an 8-bit pattern generator for testing.
-
-    Returns
-    -------
-    PatternGenerator
-        Generator configured for 1920x1080 at 8-bit depth.
-    """
-    return PatternGenerator(
-        bit_depth=8,
-        width=1920,
-        height=1080,
-        roi=ROI(x=0, y=0, width=1920, height=1080),
-    )
-
-
-@pytest.fixture
-def sample_colors_12bit() -> list[list[int]]:
-    """
-    Sample 12-bit color values for testing.
-
-    Returns
-    -------
-    list[list[int]]
-        Four colors: white, black, red, green (12-bit range).
-    """
-    return [
-        [4095, 4095, 4095],  # White
-        [0, 0, 0],  # Black
-        [4095, 0, 0],  # Red
-        [0, 4095, 0],  # Green
-    ]
+    torch = pytest.importorskip("torch")
+    expected = render(*args, **kwargs)
+    actual = render(*args, xp=torch, **kwargs)
+    expected_items = expected if isinstance(expected, tuple) else (expected,)
+    actual_items = actual if isinstance(actual, tuple) else (actual,)
+    for actual_item, expected_item in zip(actual_items, expected_items, strict=True):
+        np.testing.assert_array_equal(np.asarray(actual_item), expected_item)

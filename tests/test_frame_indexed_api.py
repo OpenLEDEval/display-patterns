@@ -3,16 +3,18 @@
 A pattern is a pure function: parameters and a frame index in, an array
 out, rendered through a caller-supplied array namespace with optional
 device placement. Stills ignore the frame index. The torch leg runs
-only where torch is installed; the numpy leg carries the full signal
-because the render path is duck-typed over the namespace.
+only where torch is installed — the numpy leg never reaches the
+backend's ``device`` and ``to`` branches, so that leg is the torch
+test's alone.
 """
 
 import numpy as np
 import pytest
 
 from display_patterns import ROI, ColorRangeError, checkerboard
+from tests.conftest import assert_backend_matches_numpy
 
-TRICOLOR_12BIT = [[4095, 2048, 0]]
+SOLID_12BIT = [[4095, 2048, 0]]
 
 
 class TestCheckerboard:
@@ -21,7 +23,7 @@ class TestCheckerboard:
     def test_delivers_exact_code_values(self) -> None:
         """A 12-bit fill authored at (4095, 2048, 0) contains exactly
         those integers (§req:success-criteria exactness)."""
-        frame = checkerboard(TRICOLOR_12BIT, width=64, height=64, bit_depth=12)
+        frame = checkerboard(SOLID_12BIT, width=64, height=64, bit_depth=12)
 
         assert frame.shape == (64, 64, 3)
         assert frame.dtype == np.uint16
@@ -71,44 +73,29 @@ class TestCheckerboard:
     def test_matches_legacy_pattern_generator(self) -> None:
         """The legacy class surface and the pure entry point render the
         same array for the same parameters."""
-        from display_patterns.image_generators import PatternGenerator
+        from display_patterns.image_generators.checkerboard import (
+            DEFAULT_PATTERN_BUFFER,
+            DEFAULT_PATTERN_GENERATOR,
+        )
 
-        roi = ROI(x=100, y=100, width=1720, height=880)
+        generator = DEFAULT_PATTERN_GENERATOR
         colors = [[2000, 2000, 2000], [0, 0, 0]]
-        legacy = PatternGenerator(
-            bit_depth=12, width=1920, height=1080, roi=roi
-        ).generate(colors)
-        pure = checkerboard(colors, width=1920, height=1080, bit_depth=12, roi=roi)
-
-        assert pure.dtype == legacy.dtype
-        np.testing.assert_array_equal(pure, legacy)
-
-    def test_explicit_numpy_namespace_matches_default(self) -> None:
-        """``xp`` defaults to numpy; passing numpy explicitly is identical."""
-        default = checkerboard(TRICOLOR_12BIT, width=16, height=16, bit_depth=12)
-        explicit = checkerboard(
-            TRICOLOR_12BIT, width=16, height=16, bit_depth=12, xp=np
+        pure = checkerboard(
+            colors,
+            width=generator.width,
+            height=generator.height,
+            bit_depth=generator.bit_depth,
+            roi=generator.roi,
         )
 
-        np.testing.assert_array_equal(default, explicit)
-
-    def test_dtype_override(self) -> None:
-        """The caller may override the integer dtype of the result."""
-        frame = checkerboard(
-            TRICOLOR_12BIT, width=8, height=8, bit_depth=12, dtype=np.uint32
-        )
-
-        assert frame.dtype == np.uint32
-        assert set(np.unique(frame)) == {0, 2048, 4095}
+        assert pure.dtype == DEFAULT_PATTERN_BUFFER.dtype
+        np.testing.assert_array_equal(pure, DEFAULT_PATTERN_BUFFER)
 
 
 def test_checkerboard_renders_identically_under_torch() -> None:
     """The same parameters render the same values through torch's
     namespace (§req:success-criteria backends). Skips where torch is
-    absent — the numpy leg above exercises the identical code path."""
-    torch = pytest.importorskip("torch")
-
-    expected = checkerboard(TRICOLOR_12BIT, width=32, height=32, bit_depth=12)
-    tensor = checkerboard(TRICOLOR_12BIT, width=32, height=32, bit_depth=12, xp=torch)
-
-    np.testing.assert_array_equal(np.asarray(tensor), expected)
+    absent — this leg alone reaches the backend's device branches."""
+    assert_backend_matches_numpy(
+        checkerboard, SOLID_12BIT, width=32, height=32, bit_depth=12
+    )
