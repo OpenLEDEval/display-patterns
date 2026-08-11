@@ -11,26 +11,13 @@ Walking skeleton: an installable package whose patterns are
 bmd-signal-gen's, moved verbatim so the bit-identical adoption claim
 is checkable before any reshaping (§spec:extraction).
 
-### Package scaffold §road:package-scaffold
-
-Scaffold the Python project (uv, hatchling, ruff/pyright/pytest,
-governance-lint CI, release-please) with the `display_patterns`
-package, empty `charts` and `io` extras, and Python 3.12+ metadata.
-§spec:package-shape.
-
-### Verbatim module move §road:verbatim-move
-
-Move `bmd_sg/image_generators/` and `bmd_sg/charts/` with their tests
-into `display_patterns`, changing imports only — core fills in the
-base package, chart and TIFF modules behind the `charts` and `io`
-extras. §spec:extraction, §spec:catalog, §spec:file-export.
-Depends on §road:package-scaffold.
-
 ### First release §road:first-release
 
-Publish 0.1 to PyPI via trusted publishing (configuring the PyPI
-project is a human step). §spec:package-shape. Depends on
-§road:verbatim-move.
+Publish 0.1 to PyPI via trusted publishing. §spec:package-shape.
+Blocked — deferred until the first rounds of cross-repo integration
+testing complete and the PyPI org is confirmed (pending the possible
+OpenLEDEval → OpenDisplayEval rename); consumers integrate via a git
+dependency meanwhile.
 
 **Verify:** In a fresh environment, `pip install display-patterns`
 imports and renders a checkerboard with numpy alone; `pip install
@@ -48,7 +35,7 @@ equivalence is banked — visible, separate changes (§spec:extraction).
 Reshape catalog entry points to the pure rendering signature —
 parameters, frame index, caller-supplied array namespace with
 optional device, numpy default — with stills ignoring the index.
-§spec:render-model. Depends on §road:verbatim-move.
+§spec:render-model. Depends on §road:extraction-spine.
 
 ### Counter panel codec §road:counter-panel
 

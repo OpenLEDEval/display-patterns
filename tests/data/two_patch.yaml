@@ -1,0 +1,23 @@
+name: "Two Patch Chart"
+version: "1.0"
+
+colorimetry:
+  color_space: "XYZ"
+  illuminant: "D65"
+  white_point: [0.3127, 0.329]
+  reference_white_Y: 100.0
+
+canvas:
+  width: 640
+  height: 360
+  surround: [0.0, 0.0, 0.0]
+
+patches:
+  - name: "GS 1"
+    color: [95.04, 100.0, 108.88]
+    pos: [0.05, 0.30]
+    size: [0.40, 0.40]
+  - name: "Red"
+    color: [41.24, 21.26, 1.93]
+    pos: [0.55, 0.30]
+    size: [0.40, 0.40]

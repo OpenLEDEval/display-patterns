@@ -23,7 +23,7 @@ there).
 
 ## Package shape §spec:package-shape
 
-*Status: not started*
+*Status: in progress*
 
 The distribution is `display-patterns` on PyPI; the import package is
 `display_patterns`. The core installs with numpy as its only
@@ -81,7 +81,7 @@ caller.
 
 ## Catalog §spec:catalog
 
-*Status: not started*
+*Status: in progress*
 
 The core catalog, renderable with numpy alone (§req:success-criteria):
 
@@ -117,7 +117,7 @@ model and carries a decode side when one is meaningful.
 
 ## Extraction and compatibility §spec:extraction
 
-*Status: not started*
+*Status: in progress*
 
 The initial code is bmd-signal-gen's `bmd_sg/image_generators/` and
 `bmd_sg/charts/` with their tests, moved verbatim before any
@@ -134,7 +134,7 @@ after the equivalence claim is banked.
 
 ## File export §spec:file-export
 
-*Status: not started*
+*Status: in progress*
 
 The `io` extra writes rendered arrays to 16-bit TIFF, serving the
 chart review workflow (§req:user-stories). Export is one-way — the

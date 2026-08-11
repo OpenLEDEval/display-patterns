@@ -14,7 +14,7 @@ real-time render graphs, and measurement pipelines.
 
 Test-pattern math lives trapped inside device tools. bmd-signal-gen's
 checkerboard and chart generation imports nothing from its DeckLink
-layer, yet a consumer who wants only the patterns must install the
+layer, yet a consumer who wants only the patterns installs the
 whole device tool. backlit_molecule re-derived its own frame-counter
 panel math because no importable source existed. Each new consumer
 rewrites geometry that is pure, deterministic, and identical across
@@ -108,7 +108,7 @@ caller's back cannot make a checkable radiometric claim.
 
 ## Priorities §req:priorities
 
-Must-have, in adoption order:
+Essential, in adoption order:
 
 1. Core catalog with exact code values: solid, checkerboard, region
    of interest, bit-depth validation.
