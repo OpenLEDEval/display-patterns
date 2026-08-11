@@ -47,7 +47,7 @@ display.
 
 ## Rendering model §spec:render-model
 
-*Status: not started*
+*Status: complete*
 
 A pattern is a pure function: parameters (geometry, values) and a
 frame index in, an array out. The same inputs produce identical
@@ -81,7 +81,7 @@ caller.
 
 ## Catalog §spec:catalog
 
-*Status: in progress*
+*Status: complete*
 
 The core catalog, renderable with numpy alone (§req:success-criteria):
 
