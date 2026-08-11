@@ -25,15 +25,28 @@ def main() -> None:
 
     import numpy as np
 
+    from display_patterns import (
+        PanelGeometry,
+        checkerboard,
+        decode_counter,
+        render_counter_panel,
+    )
     from display_patterns.image_generators import ROI, PatternGenerator
 
-    generator = PatternGenerator(
-        bit_depth=12, width=64, height=64, roi=ROI(0, 0, 64, 64)
-    )
-    pattern = generator.generate([[4095, 2048, 0]])
+    pattern = checkerboard([[4095, 2048, 0]], width=64, height=64, bit_depth=12)
     assert pattern.shape == (64, 64, 3)
     assert pattern.dtype == np.uint16
     assert set(np.unique(pattern)) == {0, 2048, 4095}
+
+    geometry = PanelGeometry.for_frame(width=64, height=16, bits=8)
+    overlay, _mask = render_counter_panel(42, geometry)
+    assert decode_counter(overlay, geometry) == 42
+
+    # Extraction-era class surface still renders identically.
+    legacy = PatternGenerator(
+        bit_depth=12, width=64, height=64, roi=ROI(0, 0, 64, 64)
+    ).generate([[4095, 2048, 0]])
+    assert (legacy == pattern).all()
 
     assert "display_patterns.charts" not in sys.modules, (
         "core rendering imported the charts subpackage"

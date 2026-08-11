@@ -33,15 +33,32 @@ Until the first PyPI release, install from a checkout:
 
 ## Usage
 
-Render a 12-bit checkerboard at exact code values:
+Render a 12-bit checkerboard at exact code values. Every catalog entry
+is a pure function of its parameters and a frame index (stills ignore
+the index), rendered through a caller-supplied array namespace —
+numpy by default, torch on GPU hosts:
 
 ```python
-from display_patterns.image_generators import ROI, PatternGenerator
+from display_patterns import checkerboard
 
-generator = PatternGenerator(
-    bit_depth=12, width=1920, height=1080, roi=ROI(0, 0, 1920, 1080)
-)
-frame = generator.generate([[4095, 2048, 0], [0, 0, 0]])  # uint16 (1080, 1920, 3)
+frame = checkerboard(
+    [[4095, 2048, 0], [0, 0, 0]], width=1920, height=1080, bit_depth=12
+)  # uint16 (1080, 1920, 3)
+
+# GPU-resident render, no host round trip:
+# frame = checkerboard(..., xp=torch, device="cuda")
+```
+
+Encode a frame counter as machine-readable bit-cells and decode it back
+— render one end of a video chain, measure latency and frame skew at
+the other:
+
+```python
+from display_patterns import PanelGeometry, decode_counter, render_counter_panel
+
+geometry = PanelGeometry.for_frame(width=1920, height=1080, bits=16)
+overlay, mask = render_counter_panel(1234, geometry)  # float32 [0, 1], HWC
+assert decode_counter(overlay, geometry) == 1234
 ```
 
 With the `charts` and `io` extras, author a chart in YAML, render it,
@@ -58,8 +75,15 @@ write_chart_tiff("my_chart.tiff", image, layout)
 
 ## API
 
-- `display_patterns.image_generators` — core pattern math:
-  `PatternGenerator`, `ROI`, `ColorRangeError`. Numpy only.
+- `display_patterns` / `display_patterns.patterns` — the core catalog:
+  `checkerboard` (one color renders a solid), `ROI`, `ColorRangeError`,
+  and the temporal-alignment counter panel (`PanelGeometry`,
+  `render_counter_panel`, `decode_counter`). The root is the canonical
+  import surface; no dependency beyond numpy — torch renders through
+  the `xp` parameter without ever being required.
+- `display_patterns.image_generators` — extraction-era class surface
+  (`PatternGenerator`), kept for existing consumers; delegates to the
+  catalog.
 - `display_patterns.charts` — chart types, colorimetric conversion, and
   rendering (`charts` extra); TIFF read/write (`io` extra).
 - `display_patterns.charts.loaders` — YAML chart definitions
