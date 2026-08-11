@@ -49,6 +49,18 @@ frame = checkerboard(
 # frame = checkerboard(..., xp=torch, device="cuda")
 ```
 
+Encode a frame counter as machine-readable bit-cells and decode it back
+— render one end of a video chain, measure latency and frame skew at
+the other:
+
+```python
+from display_patterns import PanelGeometry, decode_counter, render_counter_panel
+
+geometry = PanelGeometry.for_frame(width=1920, height=1080, bits=16)
+overlay, mask = render_counter_panel(1234, geometry)  # float32 [0, 1], HWC
+assert decode_counter(overlay, geometry) == 1234
+```
+
 With the `charts` and `io` extras, author a chart in YAML, render it,
 and write a 16-bit TIFF:
 
@@ -64,8 +76,9 @@ write_chart_tiff("my_chart.tiff", image, layout)
 ## API
 
 - `display_patterns` / `display_patterns.patterns` — the core catalog:
-  `checkerboard` (one color renders a solid), `ROI`, `ColorRangeError`.
-  Numpy only.
+  `checkerboard` (one color renders a solid), `ROI`, `ColorRangeError`,
+  and the temporal-alignment counter panel (`PanelGeometry`,
+  `render_counter_panel`, `decode_counter`). Numpy only.
 - `display_patterns.image_generators` — extraction-era class surface
   (`PatternGenerator`), kept for existing consumers; delegates to the
   catalog.

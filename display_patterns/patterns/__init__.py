@@ -8,6 +8,11 @@ their only time source. The render path performs no I/O and holds no
 state.
 """
 
+from display_patterns.patterns._counter_panel import (
+    PanelGeometry,
+    decode_counter,
+    render_counter_panel,
+)
 from display_patterns.patterns._fills import (
     ROI,
     ColorRangeError,
@@ -17,5 +22,8 @@ from display_patterns.patterns._fills import (
 __all__ = [
     "ROI",
     "ColorRangeError",
+    "PanelGeometry",
     "checkerboard",
+    "decode_counter",
+    "render_counter_panel",
 ]

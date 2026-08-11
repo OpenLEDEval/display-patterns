@@ -12,11 +12,17 @@ extras.
 from display_patterns.patterns import (
     ROI,
     ColorRangeError,
+    PanelGeometry,
     checkerboard,
+    decode_counter,
+    render_counter_panel,
 )
 
 __all__ = [
     "ROI",
     "ColorRangeError",
+    "PanelGeometry",
     "checkerboard",
+    "decode_counter",
+    "render_counter_panel",
 ]
