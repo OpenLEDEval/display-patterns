@@ -91,6 +91,10 @@ select = [
     "SIM", # flake8-simplify
     "TC",  # flake8-type-checking
     "RUF", # Ruff-specific rules
+    # Blanket `# type: ignore` can silence version-compatibility errors
+    # against the 3.12 floor (precedent: bmd-signal-gen's 3.13-only
+    # enum-alias call hid behind one).
+    "PGH003", # blanket-type-ignore
 ]
 ignore = [
     "E501", # Line too long (handled by formatter)
