@@ -117,20 +117,22 @@ model and carries a decode side when one is meaningful.
 
 ## Extraction and compatibility §spec:extraction
 
-*Status: in progress*
+*Status: complete*
 
-The initial code is bmd-signal-gen's `bmd_sg/image_generators/` and
-`bmd_sg/charts/` with their tests, moved verbatim before any
-reshaping (§req:constraints). bmd-signal-gen then consumes this
-package behind one release cycle of deprecation shims, and its CLI
-output is bit-identical across the switch (§req:success-criteria) —
-the shims and adoption live on its side (`§road:pattern-library`
-there).
+The initial code was bmd-signal-gen's `bmd_sg/image_generators/` and
+`bmd_sg/charts/` with their tests, moved verbatim before any reshaping
+(§req:constraints). bmd-signal-gen adopted the package at its v0.2.1
+behind one release cycle of deprecation shims, with bit-identical CLI
+output verified array-for-array against its last pre-split commit
+(§req:success-criteria); the shims live on its side
+(`§road:pattern-library` there).
 
 **Why verbatim first:** bit-identical adoption is checkable only
-against an unchanged implementation. Reshaping to the rendering model
-(frame index, array namespace) lands as separate, visible changes
-after the equivalence claim is banked.
+against an unchanged implementation. With that claim banked, the
+equivalence scaffolding (test module and CI job) is retired and the
+rendering-model reshape lands as separate, visible changes. The
+extraction-era `image_generators` class surface stays importable and
+delegates to the catalog, so adopters upgrade without code changes.
 
 ## File export §spec:file-export
 
