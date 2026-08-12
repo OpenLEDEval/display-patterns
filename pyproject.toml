@@ -50,10 +50,10 @@ io = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/OpenLEDEval/display-patterns"
-Repository = "https://github.com/OpenLEDEval/display-patterns.git"
-Issues = "https://github.com/OpenLEDEval/display-patterns/issues"
-Changelog = "https://github.com/OpenLEDEval/display-patterns/blob/main/CHANGELOG.md"
+Homepage = "https://github.com/OpenDisplayEval/display-patterns"
+Repository = "https://github.com/OpenDisplayEval/display-patterns.git"
+Issues = "https://github.com/OpenDisplayEval/display-patterns/issues"
+Changelog = "https://github.com/OpenDisplayEval/display-patterns/blob/main/CHANGELOG.md"
 
 [build-system]
 requires = ["hatchling", "hatch-vcs"]

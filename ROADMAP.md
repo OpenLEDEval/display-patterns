@@ -15,9 +15,9 @@ is checkable before any reshaping (§spec:extraction).
 
 Publish 0.1 to PyPI via trusted publishing. §spec:package-shape.
 Blocked — deferred until the first rounds of cross-repo integration
-testing complete and the PyPI org is confirmed (pending the possible
-OpenLEDEval → OpenDisplayEval rename); consumers integrate via a git
-dependency meanwhile.
+testing complete and the PyPI org is confirmed; consumers integrate via
+a git dependency meanwhile. (The OpenLEDEval → OpenDisplayEval rename
+that previously blocked this is done.)
 
 **Verify:** In a fresh environment, `pip install display-patterns`
 imports and renders a checkerboard with numpy alone; `pip install
