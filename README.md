@@ -15,9 +15,10 @@ array namespace (numpy or torch), so it serves CLI signal generators
 and GPU-resident render graphs alike. Chart authoring and TIFF export
 install as extras.
 
-Extracted from
+Used by
 [bmd-signal-gen](https://github.com/OpenDisplayEval/bmd-signal-gen),
-which consumes it back over SDI. Sibling consumers and context:
+which sends the rendered patterns to a display over SDI or HDMI.
+Related:
 [color-wrangler](https://github.com/Fuse-Technical-Group/color-wrangler)
 (LED-surface characterization umbrella) and its component repos.
 
@@ -81,7 +82,7 @@ write_chart_tiff("my_chart.tiff", image, layout)
   `render_counter_panel`, `decode_counter`). The root is the canonical
   import surface; no dependency beyond numpy — torch renders through
   the `xp` parameter without ever being required.
-- `display_patterns.image_generators` — extraction-era class surface
+- `display_patterns.image_generators` — legacy class surface
   (`PatternGenerator`), kept for existing consumers; delegates to the
   catalog.
 - `display_patterns.charts` — chart types, colorimetric conversion, and
