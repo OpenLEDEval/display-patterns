@@ -2,7 +2,7 @@
 
 Problem-space document for display-patterns: a device-free library of
 display test patterns. Extracted from
-[bmd-signal-gen](https://github.com/OpenLEDEval/bmd-signal-gen), whose
+[bmd-signal-gen](https://github.com/OpenDisplayEval/bmd-signal-gen), whose
 SPEC records the split decision (`§spec:pattern-library` there).
 
 ## Problem statement §req:problem-statement
@@ -86,8 +86,8 @@ caller's back cannot make a checkable radiometric claim.
 
 ## Constraints §req:constraints
 
-- Public repository under OpenLEDEval; BSD-3-Clause; published to PyPI
-  as `display-patterns`.
+- Public repository under OpenDisplayEval; BSD-3-Clause; published to
+  PyPI as `display-patterns`.
 - Seeded by extraction from bmd-signal-gen (`bmd_sg/image_generators/`,
   `bmd_sg/charts/` and their tests, moved verbatim before any
   reshaping); bmd-signal-gen adoption is non-breaking behind one

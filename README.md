@@ -16,7 +16,7 @@ and GPU-resident render graphs alike. Chart authoring and TIFF export
 install as extras.
 
 Extracted from
-[bmd-signal-gen](https://github.com/OpenLEDEval/bmd-signal-gen),
+[bmd-signal-gen](https://github.com/OpenDisplayEval/bmd-signal-gen),
 which consumes it back over SDI. Sibling consumers and context:
 [color-wrangler](https://github.com/Fuse-Technical-Group/color-wrangler)
 (LED-surface characterization umbrella) and its component repos.
