@@ -48,7 +48,7 @@ display.
 
 ## Rendering model §spec:render-model
 
-*Status: complete*
+*Status: in progress*
 
 A pattern is a pure function: parameters (geometry, values) and a
 frame index in, an array out. The same inputs produce identical
@@ -81,13 +81,14 @@ manufactures error. The library owns geometry; meaning stays with the
 caller.
 
 Catalog entries share one calling convention: pattern parameters, a
-`frame` index, and the `xp`/`device` keywords. Rasters are HWC (height,
-width, channels); integer patterns return the namespace's `uint16` at
-the stated bit depth; a pattern whose output is more than one plane
-(the counter panel's overlay + mask) returns a documented tuple. **Why
-HWC and not the source runtime's NCHW:** these are images consumers
-composite and encode, not batched graph payloads; the batch and
-channel-first axes belong to the runtime that needs them.
+`frame` index, and the `xp`/`device` keywords. Rasters are HWC
+(height, width, channels); integer patterns return the dtype the
+caller states, `uint16` by default (§spec:backend-portability); a
+pattern whose output is more than one plane (the counter panel's
+overlay + mask) returns a documented tuple. **Why HWC and not the
+source runtime's NCHW:** these are images consumers composite and
+encode, not batched graph payloads; the batch and channel-first axes
+belong to the runtime that needs them.
 
 ## Catalog §spec:catalog
 
@@ -125,6 +126,65 @@ pattern, not just a visible one.
 Catalog growth (motion material, PLUGE, ramps, zone plates) enters as
 consumers need it (§req:priorities); each entry follows the rendering
 model and carries a decode side when one is meaningful.
+
+## Backend portability §spec:backend-portability
+
+*Status: not started*
+
+The core catalog renders the same values on every backend a consumer
+brings: numpy on a CPU host, torch on CUDA, torch on Apple's MPS
+(§req:quality-attributes portability). A counter panel rendered on any
+of them decodes to the frame index it encodes
+(§req:success-criteria).
+
+Render bodies are functional. An entry point computes its result from
+broadcast arithmetic over coordinate and bit-position arrays and
+returns it, rather than allocating a buffer and writing strided slices
+into it. No render body branches on array contents, and none reads a
+value back to the host; parameter validation stays host-side, where
+the parameters already are.
+
+**Why functional and not in-place:** a strided scatter is a
+materialized intermediate no compiler can fuse away, so an in-place
+body spends a frame of memory bandwidth per write where the whole
+pattern would otherwise be one kernel. In-place bodies also exclude
+any backend whose arrays are immutable. The library never calls
+`torch.compile` itself — compilation belongs to the consumer's graph
+(§spec:non-goals) — so its obligation is to stay *compilable*, and
+staying compilable is what vectorized means here
+(§req:quality-attributes performance).
+
+A temporal pattern's frame index is array data, not a Python integer:
+`frame` accepts a scalar or a zero-dimensional array, and the
+counter's bits are extracted arithmetically. **Why the frame index is
+data:** to a tracing compiler a Python integer is a compile-time
+constant, so a consumer compiling its frame loop would recompile the
+pattern on every frame and the fused path would cost more than the
+eager one it replaced. The counter is bounded at 31 bits so its
+arithmetic fits the signed 32-bit integers every backend supports; at
+60 Hz that counts for over a year before wrapping.
+
+Output dtype is the caller's, defaulting to the exact-integer type the
+pattern has always returned. An integer pattern renders into any dtype
+that represents its stated bit depth without loss and rejects one that
+cannot, so exactness is preserved by the check rather than by a fixed
+type (§req:quality-attributes exactness). **Why the caller states the
+dtype:** `uint16` does not work on MPS, so a hard-coded return type
+makes the library unusable on a host its consumers develop on. The
+exactness claim is about the values that arrive, and a wider integer
+carries them just as exactly.
+
+Verification is proportional to where the hardware is
+(§req:priorities). The torch leg runs on every change — torch's CPU
+build is a development dependency, so backend equivalence is a gate
+rather than a test that skips silently. The CUDA and MPS legs are
+opt-in markers run on the hardware that has them. CI asserts the
+backend contract; hardware asserts the device.
+
+The `charts` extra is numpy-only and stays so: chart rendering draws
+text through an imaging library and converts through a colorimetry
+library, neither of which has a device backend. Backend portability is
+a core-catalog property.
 
 ## Extraction and compatibility §spec:extraction
 
