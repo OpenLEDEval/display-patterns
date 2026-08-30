@@ -44,6 +44,17 @@ _TITLE_SAFE_FRACTION = 0.1
 _CELL_ON = 1.0
 _DECODE_THRESHOLD = 0.5
 
+# Upper bound on the counter's width. Bit extraction runs in signed
+# 32-bit integers, the widest every backend supports without qualification
+# (§spec:backend-portability). At 60 Hz a 31-bit counter runs over a year
+# before wrapping, so the bound costs no real counter anything.
+_MAX_BITS = 31
+
+# Row kinds in the per-row gather that lays the panel: a frame row either
+# falls inside the panel's band or is blank.
+_BLANK_ROW = 0
+_PANEL_ROW = 1
+
 
 @dataclass(frozen=True)
 class PanelGeometry:
@@ -66,13 +77,15 @@ class PanelGeometry:
         Raises
         ------
         ValueError
-            If a dimension falls outside [1, 16384], or the frame is too
-            small to give each cell at least one pixel (a sub-pixel cell
-            renders an undecodable panel).
+            If ``bits`` falls outside [1, 31], a dimension falls outside
+            [1, 16384], or the frame is too small to give each cell at
+            least one pixel (a sub-pixel cell renders an undecodable
+            panel).
         """
-        if bits < 1:
+        if not 1 <= bits <= _MAX_BITS:
             raise ValueError(
-                f"bits {bits} is out of range: a counter needs at least one bit-cell."
+                f"bits {bits} is out of range: a counter carries between 1 and "
+                f"{_MAX_BITS} bit-cells."
             )
         for label, value in (("width", width), ("height", height)):
             if not 1 <= value <= _MAX_DIMENSION:
@@ -155,21 +168,44 @@ def render_counter_panel(
         1 over the panel's bounding box and 0 outside it, so a
         composite touches only the panel.
     """
-    overlay = _backend.zeros(xp, geometry.overlay_shape, xp.float32, device)
-    mask = _backend.zeros(xp, geometry.mask_shape, xp.float32, device)
+    bits = geometry.bits
+    if isinstance(frame, int):
+        # Wrap host-side, exactly: a Python integer is unbounded, and only
+        # the low ``bits`` bits are read.
+        frame = frame & ((1 << bits) - 1)
+    counter = _backend.astype(_backend.asarray(xp, frame, device), xp.int32)
 
     r0, r1 = geometry.panel_rows
     c0, c1 = geometry.panel_cols
-    mask[r0:r1, c0:c1] = _CELL_ON
+    cols = _backend.arange(xp, geometry.width, xp.int32, device)
+    rows = _backend.arange(xp, geometry.height, xp.int32, device)
 
-    bits = geometry.bits
-    for index in range(bits):
-        # MSB-first: bit 0 is the most-significant, so a wider counter
-        # reads left-to-right like a written binary number.
-        if (frame >> (bits - 1 - index)) & 1:
-            cell_c0 = geometry.pad_x + index * geometry.cell_w
-            overlay[r0:r1, cell_c0 : cell_c0 + geometry.cell_w, :] = _CELL_ON
-    return overlay, mask
+    # Which bit-cell each column falls in, and so which bit it shows.
+    # MSB-first: cell 0 is the most-significant, so a wider counter reads
+    # left-to-right like a written binary number.
+    in_panel_cols = (cols >= c0) & (cols < c1)
+    cell = (cols - geometry.pad_x) // geometry.cell_w
+    # Columns outside the panel would shift by an out-of-range amount,
+    # which is undefined; park them at zero and mask them out after.
+    shift = xp.where(in_panel_cols, bits - 1 - cell, 0)
+    lit = xp.bitwise_right_shift(counter, shift) & 1
+
+    # A frame has two kinds of row — inside the panel's band, or blank —
+    # so the raster is two rows built at row width and one gather that
+    # selects between them per row, materializing each output once
+    # (§spec:backend-portability).
+    # Shaped (1, 3) so the where broadcasts each column across the
+    # three channels, giving a (width, 3) row.
+    on = _backend.full(xp, (1, 3), _CELL_ON, xp.float32, device)
+    off = _backend.zeros(xp, (1, 3), xp.float32, device)
+    panel_row = xp.where((in_panel_cols & (lit == 1))[:, None], on, off)
+    overlay_rows = xp.stack([xp.zeros_like(panel_row), panel_row])
+    mask_row = xp.where(in_panel_cols, _CELL_ON, 0.0)
+    mask_row = _backend.astype(mask_row, xp.float32)
+    mask_rows = xp.stack([xp.zeros_like(mask_row), mask_row])
+
+    row_kind = xp.where((rows >= r0) & (rows < r1), _PANEL_ROW, _BLANK_ROW)
+    return overlay_rows[row_kind], mask_rows[row_kind]
 
 
 def decode_counter(overlay: Any, geometry: PanelGeometry) -> int:

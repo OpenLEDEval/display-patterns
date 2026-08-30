@@ -17,6 +17,7 @@ from tests.conftest import (
     assert_backend_matches_numpy,
     decode_on_device,
     device_or_skip,
+    torch_or_skip,
 )
 
 
@@ -137,5 +138,58 @@ def test_round_trip_on_a_device(device_name: str) -> None:
 def test_geometry_rejects_a_zero_bit_counter() -> None:
     """A counter needs at least one bit-cell; ``bits=0`` is rejected
     with a range error rather than a division crash."""
-    with pytest.raises(ValueError, match="at least one"):
+    with pytest.raises(ValueError, match="between 1 and"):
         PanelGeometry.for_frame(width=64, height=16, bits=0)
+
+
+class TestFrameIndexAsData:
+    """A temporal pattern's frame index is array data, not a Python
+    integer (§spec:backend-portability)."""
+
+    def test_accepts_a_zero_dimensional_array(self) -> None:
+        """A 0-d array frame index renders what the equivalent integer
+        renders."""
+        geom = _geometry(bits=8)
+        from_int, _ = render_counter_panel(42, geom)
+        from_array, _ = render_counter_panel(np.asarray(42), geom)
+
+        np.testing.assert_array_equal(from_array, from_int)
+
+    def test_wraps_modulo_the_counter_width(self) -> None:
+        """The counter wraps at 2**bits, so a frame index past the
+        wrap encodes its remainder."""
+        geom = _geometry(bits=8)
+        wrapped, _ = render_counter_panel(256 + 42, geom)
+        direct, _ = render_counter_panel(42, geom)
+
+        np.testing.assert_array_equal(wrapped, direct)
+        assert decode_counter(wrapped, geom) == 42
+
+    def test_geometry_rejects_a_counter_wider_than_31_bits(self) -> None:
+        """Bit extraction runs in the signed 32-bit integers every
+        backend supports, so the counter is bounded at 31 bits."""
+        with pytest.raises(ValueError, match="31"):
+            PanelGeometry.for_frame(width=4096, height=256, bits=32)
+
+
+def test_compiles_once_over_many_frames() -> None:
+    """Stepping the frame index must not recompile the pattern.
+
+    A Python integer is a compile-time constant to dynamo, so the
+    previous per-bit Python branch produced a distinct graph per frame
+    and, past the recompile limit, made dynamo abandon compilation for
+    the call site entirely (§spec:backend-portability). Uses the eager
+    backend: recompilation is a guard property, and this keeps the test
+    off a C++ toolchain.
+    """
+    torch = torch_or_skip()
+    import torch._dynamo as dynamo
+
+    geom = PanelGeometry.for_frame(width=256, height=64, bits=8)
+    dynamo.reset()
+    dynamo.utils.counters.clear()
+    compiled = torch.compile(render_counter_panel, backend="eager")
+    for frame in range(100):
+        compiled(torch.tensor(frame, dtype=torch.int32), geom, xp=torch)
+
+    assert dynamo.utils.counters["stats"]["unique_graphs"] == 1
