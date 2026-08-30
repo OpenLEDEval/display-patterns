@@ -232,7 +232,8 @@ that rationale in its `§spec:verification`).
 Out of scope, with their owners: device output and signaling
 (bmd-signal-gen, pydecklink); playback, clocks, and frame pacing
 (consumers' runtimes); color management and display characterization
-(ocio-display-gen, color-wrangler); instrument I/O and measurement
-sessions (color-wrangler, colour-specio); runtime graph integration
-(consumers' render runtimes). The library defines the mapping from
-parameters to image and nothing on either side of it.
+(ocio-display-gen); instrument I/O and measurement sessions
+(colour-specio, and the surface-characterization umbrella that drives
+it); runtime graph integration (consumers' render runtimes). The
+library defines the mapping from parameters to image and nothing on
+either side of it.
