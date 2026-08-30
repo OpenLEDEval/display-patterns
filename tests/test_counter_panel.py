@@ -3,8 +3,8 @@
 Encode and decode ship together: a panel rendered at frame N decodes
 back to N from the array, and after a lossy trip, because decode
 samples each cell's centre and thresholds at the value midpoint. The
-math is ported from backlit_molecule's probe (its ``§spec:alignment-probe``)
-onto the frame-indexed namespace signature; these tests carry the
+math is ported from the alignment probe of a real-time LED render
+runtime onto the frame-indexed namespace signature; these tests carry the
 numpy leg, with a torch leg (the only one reaching the backend's
 device branches) that skips where torch is absent.
 """

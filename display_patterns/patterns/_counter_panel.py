@@ -5,7 +5,7 @@ MSB-first, with the matching decoder (§spec:catalog). Geometry is
 deterministic — encoder and decoder agree on every cell from
 parameters alone — and decode samples each cell's centre, thresholding
 at the value midpoint, so the counter survives a lossy video chain.
-Ported from backlit_molecule's probe math (its ``§spec:alignment-probe``)
+Ported from the alignment-probe math of a real-time LED render runtime
 onto the frame-indexed namespace signature.
 
 Value and layout conventions (§spec:render-model): this is a float

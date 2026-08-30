@@ -15,8 +15,8 @@ real-time render graphs, and measurement pipelines.
 Test-pattern math lives trapped inside device tools. bmd-signal-gen's
 checkerboard and chart generation imports nothing from its DeckLink
 layer, yet a consumer who wants only the patterns installs the
-whole device tool. backlit_molecule re-derived its own frame-counter
-panel math because no importable source existed. Each new consumer
+whole device tool. A real-time LED render runtime re-derived its own
+frame-counter panel math because no importable source existed. Each new consumer
 rewrites geometry that is pure, deterministic, and identical across
 delivery paths.
 
@@ -116,7 +116,7 @@ Essential, in adoption order:
    extras) with bit-identical output.
 3. Frame-indexed rendering signature on every pattern.
 4. Temporal-alignment counter panel, encode and decode (ported from
-   backlit_molecule's probe math).
+   a real-time LED render runtime's probe math).
 
 Nice-to-have, after adoption:
 
