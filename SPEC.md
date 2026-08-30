@@ -11,10 +11,11 @@ Display test-pattern math lives trapped inside device tools
 (§req:problem-statement). bmd-signal-gen's pattern and chart modules
 import nothing from its DeckLink layer yet ship only inside the device
 tool; a real-time LED render runtime re-derived frame-counter panel
-math for want of an importable source. General imaging libraries carry color-management
-opinions and cannot make a measurement claim: driving *exact* integer
-code values at a stated bit depth is the point, and a library that
-rescales or quantizes behind the caller's back defeats it.
+math for want of an importable source. General imaging libraries carry
+color-management opinions and cannot make a measurement claim: driving
+*exact* integer code values at a stated bit depth is the point, and a
+library that rescales or quantizes behind the caller's back defeats
+it.
 
 display-patterns is that importable source: deterministic pattern
 math, device-free, exact by construction. bmd-signal-gen's SPEC
@@ -169,5 +170,5 @@ Out of scope, with their owners: device output and signaling
 (consumers' runtimes); color management and display characterization
 (ocio-display-gen, color-wrangler); instrument I/O and measurement
 sessions (color-wrangler, colour-specio); runtime graph integration
-(consumers' render runtimes). The library defines the mapping from parameters
-to image and nothing on either side of it.
+(consumers' render runtimes). The library defines the mapping from
+parameters to image and nothing on either side of it.

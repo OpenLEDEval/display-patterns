@@ -14,11 +14,11 @@ real-time render graphs, and measurement pipelines.
 
 Test-pattern math lives trapped inside device tools. bmd-signal-gen's
 checkerboard and chart generation imports nothing from its DeckLink
-layer, yet a consumer who wants only the patterns installs the
-whole device tool. A real-time LED render runtime re-derived its own
-frame-counter panel math because no importable source existed. Each new consumer
-rewrites geometry that is pure, deterministic, and identical across
-delivery paths.
+layer, yet a consumer who wants only the patterns installs the whole
+device tool. A real-time LED render runtime re-derived its own
+frame-counter panel math because no importable source existed. Each
+new consumer rewrites geometry that is pure, deterministic, and
+identical across delivery paths.
 
 General imaging libraries fall short in the other direction: they
 carry color-management and encoding opinions and offer no measurement
