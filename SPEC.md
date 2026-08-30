@@ -145,13 +145,14 @@ value back to the host; parameter validation stays host-side, where
 the parameters already are.
 
 **Why functional and not in-place:** a strided scatter is a
-materialized intermediate no compiler can fuse away, so an in-place
-body spends a frame of memory bandwidth per write where the whole
-pattern would otherwise be one kernel. In-place bodies also exclude
-any backend whose arrays are immutable. The library never calls
-`torch.compile` itself — compilation belongs to the consumer's graph
-(§spec:non-goals) — so its obligation is to stay *compilable*, and
-staying compilable is what vectorized means here
+materialized intermediate no compiler fuses away, so an in-place body
+spends a pass over the frame per write where the whole pattern is one
+kernel — measured at 2160p on MPS, 3.5 ms for the strided body against
+0.7 ms for the functional one, before any compilation. In-place bodies
+also exclude any backend whose arrays are immutable. The library never
+calls `torch.compile` itself — compilation belongs to the consumer's
+graph (§spec:non-goals) — so its obligation is to stay *compilable*,
+and staying compilable is what vectorized means here
 (§req:quality-attributes performance).
 
 A temporal pattern's frame index is array data, not a Python integer:
@@ -169,10 +170,13 @@ pattern has always returned. An integer pattern renders into any dtype
 that represents its stated bit depth without loss and rejects one that
 cannot, so exactness is preserved by the check rather than by a fixed
 type (§req:quality-attributes exactness). **Why the caller states the
-dtype:** `uint16` does not work on MPS, so a hard-coded return type
-makes the library unusable on a host its consumers develop on. The
-exactness claim is about the values that arrive, and a wider integer
-carries them just as exactly.
+dtype:** a fixed return type forces every consumer whose value space
+differs to pay a conversion pass, and it collides with what a backend
+can compile. `uint16` renders on MPS in eager mode but has no Metal
+code-generation mapping, so a `uint16` output cannot be compiled there
+at all — and which types a backend supports is the backend's business,
+moving between its releases. The exactness claim is about the values
+that arrive; any type wide enough carries them just as exactly.
 
 Verification is proportional to where the hardware is
 (§req:priorities). The torch leg runs on every change — torch's CPU
