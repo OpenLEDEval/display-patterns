@@ -36,7 +36,13 @@ def device_or_skip(name: str) -> Any:
 
 
 def to_host(array: Any) -> np.ndarray:
-    """``array`` as a host numpy array, wherever it was rendered."""
+    """``array`` as a host numpy array, wherever it was rendered.
+
+    Deliberately not the library's own ``_backend.to_host``: comparing
+    a rendered array through the same transfer helper the render path
+    used would hide a fault in that helper from every test that relies
+    on it.
+    """
     if hasattr(array, "cpu"):
         array = array.cpu()
     return np.asarray(array)

@@ -58,10 +58,12 @@ class ROI:
         return self.y + self.height
 
 
-# Index of the blank row in the per-row kind table: a row outside the
-# region of interest selects it, so the region is bounded by the same
-# gather that lays the tile rather than by a second masking pass.
-_BLANK_ROW = 2
+# Row kinds in the per-row gather that lays the frame. A row outside the
+# region of interest selects the blank kind, so the region is bounded by
+# the same gather that lays the tile rather than by a second masking
+# pass. Blank is index 0 here as it is in the counter panel.
+_BLANK_ROW = 0
+_FIRST_TILE_ROW = 1
 
 
 class ColorRangeError(RuntimeError):
@@ -225,7 +227,8 @@ def checkerboard(
     col_inside = (cols >= roi.x) & (cols < min(roi.x2, width))
     even_row = xp.where(col_inside, xp.where(col_odd, palette[2], palette[0]), blank)
     odd_row = xp.where(col_inside, xp.where(col_odd, palette[3], palette[1]), blank)
-    rows_by_kind = xp.stack([even_row, odd_row, xp.zeros_like(even_row)])
+    rows_by_kind = xp.stack([xp.zeros_like(even_row), even_row, odd_row])
 
     row_inside = (rows >= roi.y) & (rows < min(roi.y2, height))
-    return rows_by_kind[xp.where(row_inside, (rows - roi.y) % 2, _BLANK_ROW)]
+    tile_row = _FIRST_TILE_ROW + (rows - roi.y) % 2
+    return rows_by_kind[xp.where(row_inside, tile_row, _BLANK_ROW)]
