@@ -48,7 +48,7 @@ display.
 
 ## Rendering model §spec:render-model
 
-*Status: in progress*
+*Status: complete*
 
 A pattern is a pure function: parameters (geometry, values) and a
 frame index in, an array out. The same inputs produce identical
@@ -129,7 +129,7 @@ model and carries a decode side when one is meaningful.
 
 ## Backend portability §spec:backend-portability
 
-*Status: not started*
+*Status: complete*
 
 The core catalog renders the same values on every backend a consumer
 brings: numpy on a CPU host, torch on CUDA, torch on Apple's MPS
