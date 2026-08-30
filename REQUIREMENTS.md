@@ -15,10 +15,10 @@ real-time render graphs, and measurement pipelines.
 Test-pattern math lives trapped inside device tools. bmd-signal-gen's
 checkerboard and chart generation imports nothing from its DeckLink
 layer, yet a consumer who wants only the patterns installs the whole
-device tool. A real-time LED render runtime re-derived its own
-frame-counter panel math because no importable source existed. Each
-new consumer rewrites geometry that is pure, deterministic, and
-identical across delivery paths.
+device tool. A renderer re-derived its own frame-counter panel math
+because no importable source existed. Each new consumer rewrites
+geometry that is pure, deterministic, and identical across delivery
+paths.
 
 General imaging libraries fall short in the other direction: they
 carry color-management and encoding opinions and offer no measurement
@@ -116,7 +116,7 @@ Essential, in adoption order:
    extras) with bit-identical output.
 3. Frame-indexed rendering signature on every pattern.
 4. Temporal-alignment counter panel, encode and decode (ported from
-   a real-time LED render runtime's probe math).
+   a renderer's probe math).
 
 Nice-to-have, after adoption:
 

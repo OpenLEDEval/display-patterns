@@ -10,9 +10,9 @@ system does and why. See ROADMAP.md for work remaining.
 Display test-pattern math lives trapped inside device tools
 (§req:problem-statement). bmd-signal-gen's pattern and chart modules
 import nothing from its DeckLink layer yet ship only inside the device
-tool; a real-time LED render runtime re-derived frame-counter panel
-math for want of an importable source. General imaging libraries carry
-color-management opinions and cannot make a measurement claim: driving
+tool; a renderer re-derived frame-counter panel math for want of an
+importable source. General imaging libraries carry color-management
+opinions and cannot make a measurement claim: driving
 *exact* integer code values at a stated bit depth is the point, and a
 library that rescales or quantizes behind the caller's back defeats
 it.
@@ -108,9 +108,9 @@ The core catalog, renderable with numpy alone (§req:success-criteria):
   back out of the other (§req:user-stories). The geometry is
   deterministic, so encoder and decoder agree on every cell from
   parameters alone, and decode thresholds at the cell midpoint to
-  survive a lossy chain (§req:success-criteria). Ported from the
-  alignment-probe math of a real-time LED render runtime, which
-  retires its bespoke node in favor of generic primitives.
+  survive a lossy chain (§req:success-criteria). Ported from a
+  renderer's alignment-probe math, which retires its bespoke node in
+  favor of generic primitives.
 
 The `charts` extra adds chart production (§req:user-stories): a chart
 is authored as a YAML patch list carrying colorimetric values,

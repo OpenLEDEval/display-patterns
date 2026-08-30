@@ -2,11 +2,11 @@
 
 The frame index is rendered as binary bit-cells in one title-safe row,
 MSB-first, with the matching decoder (§spec:catalog). Geometry is
-deterministic — encoder and decoder agree on every cell from
-parameters alone — and decode samples each cell's centre, thresholding
-at the value midpoint, so the counter survives a lossy video chain.
-Ported from the alignment-probe math of a real-time LED render runtime
-onto the frame-indexed namespace signature.
+deterministic — encoder and decoder agree on every cell from parameters
+alone — and decode samples each cell's centre, thresholding at the value
+midpoint, so the counter survives a lossy video chain. Ported from a
+renderer's alignment-probe math onto the frame-indexed namespace
+signature.
 
 Value and layout conventions (§spec:render-model): this is a float
 pattern; the overlay is ``(height, width, 3)`` float32 in [0, 1] — a
