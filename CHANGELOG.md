@@ -1,3 +1,16 @@
+## [0.2.1](https://github.com/OpenDisplayEval/display-patterns/compare/v0.2.0...v0.2.1) (2026-08-30)
+
+
+### Bug Fixes
+
+* **counter-panel:** widen the frame index annotation to array data ([0d34786](https://github.com/OpenDisplayEval/display-patterns/commit/0d347869c0e66733ff5bea1eb0edb1f1d7856c63))
+
+
+### Performance Improvements
+
+* **counter-panel:** extract bits arithmetically, from an array index ([d7dc20e](https://github.com/OpenDisplayEval/display-patterns/commit/d7dc20e1172737514865c11d8472d10a4e731ee4))
+* **fills:** render the checkerboard functionally, at a caller's dtype ([f8ae0f3](https://github.com/OpenDisplayEval/display-patterns/commit/f8ae0f3d1d27bc5c8efc6cc758b21be2e26fa46f))
+
 # [0.2.0](https://github.com/OpenLEDEval/display-patterns/compare/v0.1.0...v0.2.0) (2026-08-11)
 
 
