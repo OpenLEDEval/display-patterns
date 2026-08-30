@@ -139,7 +139,7 @@ class PanelGeometry:
 
 
 def render_counter_panel(
-    frame: int, geometry: PanelGeometry, *, xp: Any = np, device: Any = None
+    frame: int | Any, geometry: PanelGeometry, *, xp: Any = np, device: Any = None
 ) -> tuple[Any, Any]:
     """Render frame index ``frame`` into a counter panel: ``(overlay, mask)``.
 
@@ -149,8 +149,12 @@ def render_counter_panel(
 
     Parameters
     ----------
-    frame : int
-        Frame index to encode, MSB-first.
+    frame : int or array
+        Frame index to encode, MSB-first. A zero-dimensional array is
+        accepted and preferred by a consumer compiling its frame loop:
+        a Python integer is a compile-time constant, so stepping one
+        recompiles the pattern (§spec:backend-portability). Wraps
+        modulo ``2**geometry.bits``.
     geometry : PanelGeometry
         Cell layout; build with :meth:`PanelGeometry.for_frame`.
     xp : namespace, optional
