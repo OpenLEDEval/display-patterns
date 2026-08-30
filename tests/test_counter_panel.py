@@ -13,7 +13,11 @@ import numpy as np
 import pytest
 
 from display_patterns import PanelGeometry, decode_counter, render_counter_panel
-from tests.conftest import assert_backend_matches_numpy
+from tests.conftest import (
+    assert_backend_matches_numpy,
+    decode_on_device,
+    device_or_skip,
+)
 
 
 def _geometry(bits: int) -> PanelGeometry:
@@ -110,6 +114,24 @@ def test_round_trip_under_torch() -> None:
     reaches the backend's device branches."""
     geom = _geometry(bits=8)
     assert_backend_matches_numpy(render_counter_panel, 42, geom)
+
+
+@pytest.mark.parametrize(
+    "device_name",
+    [
+        pytest.param("cuda", marks=pytest.mark.cuda),
+        pytest.param("mps", marks=pytest.mark.mps),
+    ],
+)
+def test_round_trip_on_a_device(device_name: str) -> None:
+    """A panel rendered on a device decodes to the index it encodes,
+    read back in one transfer (§spec:backend-portability). Deselected
+    unless asked for by marker; skipped where the host has no such
+    device."""
+    device = device_or_skip(device_name)
+    geom = _geometry(bits=8)
+    assert_backend_matches_numpy(render_counter_panel, 42, geom, device=device)
+    assert decode_on_device(render_counter_panel, 42, geom, device=device) == 42
 
 
 def test_geometry_rejects_a_zero_bit_counter() -> None:

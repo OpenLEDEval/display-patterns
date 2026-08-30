@@ -94,7 +94,9 @@ def _expand_colors(colors: ArrayLike, bit_depth: int) -> np.ndarray:
 
     num_colors = host.shape[0]
     if num_colors == 1:
-        host = np.broadcast_to(host, (4, 3))
+        # Copied, not a broadcast view: a view is read-only, and torch
+        # warns that it cannot back a tensor with non-writable memory.
+        host = np.broadcast_to(host, (4, 3)).copy()
     elif num_colors == 2:
         host = host[(0, 1, 1, 0), :]
     elif num_colors == 3:
