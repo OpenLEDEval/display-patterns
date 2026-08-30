@@ -19,8 +19,11 @@ Used by
 [bmd-signal-gen](https://github.com/OpenDisplayEval/bmd-signal-gen),
 which sends the rendered patterns to a display over SDI or HDMI.
 Related:
-[color-wrangler](https://github.com/Fuse-Technical-Group/color-wrangler)
-(LED-surface characterization umbrella) and its component repos.
+[display-measure](https://github.com/OpenDisplayEval/display-measure),
+[display-report](https://github.com/OpenDisplayEval/display-report), and
+[methodology](https://github.com/OpenDisplayEval/methodology), which
+measure, report on, and document the characterization of a display
+surface.
 
 ## Installation
 
