@@ -10,11 +10,12 @@ system does and why. See ROADMAP.md for work remaining.
 Display test-pattern math lives trapped inside device tools
 (§req:problem-statement). bmd-signal-gen's pattern and chart modules
 import nothing from its DeckLink layer yet ship only inside the device
-tool; backlit_molecule re-derived frame-counter panel math for want of
-an importable source. General imaging libraries carry color-management
-opinions and cannot make a measurement claim: driving *exact* integer
-code values at a stated bit depth is the point, and a library that
-rescales or quantizes behind the caller's back defeats it.
+tool; a renderer re-derived frame-counter panel math for want of an
+importable source. General imaging libraries carry color-management
+opinions and cannot make a measurement claim: driving
+*exact* integer code values at a stated bit depth is the point, and a
+library that rescales or quantizes behind the caller's back defeats
+it.
 
 display-patterns is that importable source: deterministic pattern
 math, device-free, exact by construction. bmd-signal-gen's SPEC
@@ -80,13 +81,14 @@ manufactures error. The library owns geometry; meaning stays with the
 caller.
 
 Catalog entries share one calling convention: pattern parameters, a
-`frame` index, and the `xp`/`device` keywords. Rasters are HWC (height,
-width, channels); integer patterns return the namespace's `uint16` at
-the stated bit depth; a pattern whose output is more than one plane
-(the counter panel's overlay + mask) returns a documented tuple. **Why
-HWC and not the source runtime's NCHW:** these are images consumers
-composite and encode, not batched graph payloads; the batch and
-channel-first axes belong to the runtime that needs them.
+`frame` index, and the `xp`/`device` keywords. Rasters are HWC
+(height, width, channels); integer patterns return the dtype the
+caller states, `uint16` by default (§spec:backend-portability); a
+pattern whose output is more than one plane (the counter panel's
+overlay + mask) returns a documented tuple. **Why HWC and not the
+source runtime's NCHW:** these are images consumers composite and
+encode, not batched graph payloads; the batch and channel-first axes
+belong to the runtime that needs them.
 
 ## Catalog §spec:catalog
 
@@ -106,9 +108,9 @@ The core catalog, renderable with numpy alone (§req:success-criteria):
   back out of the other (§req:user-stories). The geometry is
   deterministic, so encoder and decoder agree on every cell from
   parameters alone, and decode thresholds at the cell midpoint to
-  survive a lossy chain (§req:success-criteria). Ported from
-  backlit_molecule's probe math (`§spec:alignment-probe` there),
-  which retires its bespoke node in favor of generic primitives.
+  survive a lossy chain (§req:success-criteria). Ported from a
+  renderer's alignment-probe math, which retires its bespoke node in
+  favor of generic primitives.
 
 The `charts` extra adds chart production (§req:user-stories): a chart
 is authored as a YAML patch list carrying colorimetric values,
@@ -124,6 +126,69 @@ pattern, not just a visible one.
 Catalog growth (motion material, PLUGE, ramps, zone plates) enters as
 consumers need it (§req:priorities); each entry follows the rendering
 model and carries a decode side when one is meaningful.
+
+## Backend portability §spec:backend-portability
+
+*Status: complete*
+
+The core catalog renders the same values on every backend a consumer
+brings: numpy on a CPU host, torch on CUDA, torch on Apple's MPS
+(§req:quality-attributes portability). A counter panel rendered on any
+of them decodes to the frame index it encodes
+(§req:success-criteria).
+
+Render bodies are functional. An entry point computes its result from
+broadcast arithmetic over coordinate and bit-position arrays and
+returns it, rather than allocating a buffer and writing strided slices
+into it. No render body branches on array contents, and none reads a
+value back to the host; parameter validation stays host-side, where
+the parameters already are.
+
+**Why functional and not in-place:** a strided scatter is a
+materialized intermediate no compiler fuses away, so an in-place body
+spends a pass over the frame per write where the whole pattern is one
+kernel — measured at 2160p on MPS, 3.5 ms for the strided body against
+0.7 ms for the functional one, before any compilation. In-place bodies
+also exclude any backend whose arrays are immutable. The library never
+calls `torch.compile` itself — compilation belongs to the consumer's
+graph (§spec:non-goals) — so its obligation is to stay *compilable*,
+and staying compilable is what vectorized means here
+(§req:quality-attributes performance).
+
+A temporal pattern's frame index is array data, not a Python integer:
+`frame` accepts a scalar or a zero-dimensional array, and the
+counter's bits are extracted arithmetically. **Why the frame index is
+data:** to a tracing compiler a Python integer is a compile-time
+constant, so a consumer compiling its frame loop would recompile the
+pattern on every frame and the fused path would cost more than the
+eager one it replaced. The counter is bounded at 31 bits so its
+arithmetic fits the signed 32-bit integers every backend supports; at
+60 Hz that counts for over a year before wrapping.
+
+Output dtype is the caller's, defaulting to the exact-integer type the
+pattern has always returned. An integer pattern renders into any dtype
+that represents its stated bit depth without loss and rejects one that
+cannot, so exactness is preserved by the check rather than by a fixed
+type (§req:quality-attributes exactness). **Why the caller states the
+dtype:** a fixed return type forces every consumer whose value space
+differs to pay a conversion pass, and it collides with what a backend
+can compile. `uint16` renders on MPS in eager mode but has no Metal
+code-generation mapping, so a `uint16` output cannot be compiled there
+at all — and which types a backend supports is the backend's business,
+moving between its releases. The exactness claim is about the values
+that arrive; any type wide enough carries them just as exactly.
+
+Verification is proportional to where the hardware is
+(§req:priorities). The torch leg runs on every change — torch's CPU
+build is a development dependency, so backend equivalence is a gate
+rather than a test that skips silently. The CUDA and MPS legs are
+opt-in markers run on the hardware that has them. CI asserts the
+backend contract; hardware asserts the device.
+
+The `charts` extra is numpy-only and stays so: chart rendering draws
+text through an imaging library and converts through a colorimetry
+library, neither of which has a device backend. Backend portability is
+a core-catalog property.
 
 ## Extraction and compatibility §spec:extraction
 
@@ -167,7 +232,8 @@ that rationale in its `§spec:verification`).
 Out of scope, with their owners: device output and signaling
 (bmd-signal-gen, pydecklink); playback, clocks, and frame pacing
 (consumers' runtimes); color management and display characterization
-(ocio-display-gen, color-wrangler); instrument I/O and measurement
-sessions (color-wrangler, colour-specio); runtime graph integration
-(backlit_molecule). The library defines the mapping from parameters
-to image and nothing on either side of it.
+(ocio-display-gen); instrument I/O and measurement sessions
+(colour-specio, and the surface-characterization umbrella that drives
+it); runtime graph integration (consumers' render runtimes). The
+library defines the mapping from parameters to image and nothing on
+either side of it.

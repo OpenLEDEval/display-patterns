@@ -70,7 +70,26 @@ dev = [
     "pyright>=1.1.403",
     "pytest>=8.4.1",
     "ruff>=0.12.3",
+    # Torch is never a dependency of this package — the array namespace is
+    # duck-typed (§spec:render-model). It is a development dependency so the
+    # backend-equivalence tests run on every change instead of skipping
+    # silently (§spec:backend-portability).
+    "torch>=2.6",
 ]
+
+[tool.uv.sources]
+# On Linux, PyPI's `torch` bundles the CUDA runtime — gigabytes CI does not
+# need to prove the backend contract, which the CPU build proves just as well.
+# macOS resolves from PyPI, whose arm64 wheel is the one carrying MPS. A
+# developer wanting CUDA locally overrides this index.
+torch = [
+    { index = "pytorch-cpu", marker = "sys_platform == 'linux'" },
+]
+
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true
 
 [tool.ruff]
 line-length = 88
@@ -135,3 +154,11 @@ reportUnnecessaryCast = true
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+# Device legs are opt-in: CI asserts the backend contract on torch's CPU
+# build, and hardware asserts the device (§spec:backend-portability). Run
+# them with `pytest -m mps` or `pytest -m cuda`, which overrides the -m here.
+addopts = "-m 'not cuda and not mps'"
+markers = [
+    "cuda: needs a CUDA device; deselected unless -m cuda is given",
+    "mps: needs an Apple MPS device; deselected unless -m mps is given",
+]

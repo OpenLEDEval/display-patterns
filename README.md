@@ -11,16 +11,21 @@ property measurement work depends on — and the render path never
 touches a device, a clock, or a file.
 
 The core depends on numpy alone and renders into a caller-supplied
-array namespace (numpy or torch), so it serves CLI signal generators
-and GPU-resident render graphs alike. Chart authoring and TIFF export
-install as extras.
+array namespace (numpy or torch, CPU or GPU), so it serves CLI signal
+generators and GPU-resident render graphs alike. Render bodies are
+functional and free of Python-level branching on frame data, so a
+consumer can compile them into its own graph. Chart authoring and TIFF
+export install as extras.
 
 Used by
 [bmd-signal-gen](https://github.com/OpenDisplayEval/bmd-signal-gen),
 which sends the rendered patterns to a display over SDI or HDMI.
 Related:
-[color-wrangler](https://github.com/Fuse-Technical-Group/color-wrangler)
-(LED-surface characterization umbrella) and its component repos.
+[display-measure](https://github.com/OpenDisplayEval/display-measure),
+[display-report](https://github.com/OpenDisplayEval/display-report), and
+[methodology](https://github.com/OpenDisplayEval/methodology), which
+measure, report on, and document the characterization of a display
+surface.
 
 ## Installation
 
@@ -50,6 +55,11 @@ frame = checkerboard(
 # frame = checkerboard(..., xp=torch, device="cuda")
 ```
 
+`dtype` states the output type, `uint16` by default. Any type that
+carries the stated bit depth exactly is accepted; one that cannot is
+refused rather than silently wrapping. See [Backends](#backends) for
+when to state it.
+
 Encode a frame counter as machine-readable bit-cells and decode it back
 — render one end of a video chain, measure latency and frame skew at
 the other:
@@ -61,6 +71,44 @@ geometry = PanelGeometry.for_frame(width=1920, height=1080, bits=16)
 overlay, mask = render_counter_panel(1234, geometry)  # float32 [0, 1], HWC
 assert decode_counter(overlay, geometry) == 1234
 ```
+
+The counter carries 1 to 31 bits and wraps at `2**bits` — 31 bits runs
+over a year at 60 Hz. Pass the frame index as a zero-dimensional array
+rather than a Python integer when compiling (see below).
+
+## Backends
+
+Every core pattern renders through the `xp` namespace with an optional
+`device`, and returns the same values on each. Two things are worth
+knowing before putting one inside a compiled graph.
+
+**Pass the frame index as array data.** A Python integer is a
+compile-time constant, so stepping one recompiles the pattern on every
+frame — and past the recompile limit `torch.compile` gives up on the
+call site and falls back to eager for good:
+
+```python
+counter = torch.tensor(frame_number, dtype=torch.int32, device=device)
+overlay, mask = render_counter_panel(counter, geometry, xp=torch, device=device)
+```
+
+**State a dtype your backend can compile.** `uint16` renders correctly
+on MPS in eager mode, but Inductor's Metal code generator has no
+mapping for it, so a `uint16` output cannot be compiled there at all.
+An `int32` or `float32` output can, and carries 12-bit code values just
+as exactly:
+
+```python
+frame = checkerboard(colors, ..., xp=torch, device=device, dtype=torch.int32)
+```
+
+Which types a backend supports is the backend's business and moves
+between its releases, which is why the library takes the dtype from the
+caller rather than fixing one.
+
+Verified on numpy and on torch's CPU build in CI; on CUDA and MPS by
+`pytest -m cuda` and `pytest -m mps`, which are deselected by default
+and run where the hardware is.
 
 With the `charts` and `io` extras, author a chart in YAML, render it,
 and write a 16-bit TIFF:
