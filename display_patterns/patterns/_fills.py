@@ -58,6 +58,12 @@ class ROI:
         return self.y + self.height
 
 
+# Index of the blank row in the per-row kind table: a row outside the
+# region of interest selects it, so the region is bounded by the same
+# gather that lays the tile rather than by a second masking pass.
+_BLANK_ROW = 2
+
+
 class ColorRangeError(RuntimeError):
     """Exception raised when color values are outside the valid range.
 
@@ -109,6 +115,23 @@ def _expand_colors(colors: ArrayLike, bit_depth: int) -> np.ndarray:
     return host
 
 
+def _validate_dtype(xp: Any, dtype: Any, bit_depth: int) -> None:
+    """Refuse a dtype that cannot carry the stated bit depth exactly.
+
+    Exactness is preserved by this check rather than by a fixed return
+    type (§spec:backend-portability), so the caller may state whatever
+    its value space and its backend's compiler need.
+    """
+    required = 2**bit_depth - 1
+    carried = _backend.max_exact_integer(xp, dtype)
+    if carried < required:
+        raise ValueError(
+            f"dtype {dtype} cannot represent {bit_depth}-bit code values: it "
+            f"carries integers exactly to {carried}, short of {required}. "
+            f"State a wider dtype."
+        )
+
+
 def checkerboard(
     colors: ArrayLike,
     *,
@@ -119,6 +142,7 @@ def checkerboard(
     frame: int = 0,
     xp: Any = np,
     device: Any = None,
+    dtype: Any = None,
 ) -> Any:
     """Render a checkerboard (or solid) fill at exact code values.
 
@@ -149,11 +173,16 @@ def checkerboard(
     device : optional
         Device placement for ``xp`` backends that take one; ``None``
         uses the backend default.
+    dtype : optional
+        Output dtype, defaulting to the namespace's ``uint16``. Any
+        dtype carrying ``bit_depth`` exactly is accepted; state a wider
+        one where a backend cannot compile ``uint16``
+        (§spec:backend-portability).
 
     Returns
     -------
     array
-        ``(height, width, 3)`` ``uint16`` array on ``xp``.
+        ``(height, width, 3)`` array on ``xp``, of ``dtype``.
 
     Raises
     ------
@@ -161,27 +190,42 @@ def checkerboard(
         If ``colors`` has an invalid shape.
     ColorRangeError
         If a color value falls outside the stated bit depth's range.
+    ValueError
+        If ``dtype`` cannot represent the stated bit depth exactly.
     """
     del frame  # a still ignores the frame index (§spec:render-model)
 
     expanded = _expand_colors(colors, bit_depth)
     if roi is None:
         roi = ROI(0, 0, width, height)
+    if dtype is None:
+        dtype = xp.uint16
+    _validate_dtype(xp, dtype, bit_depth)
 
-    # Write the tile colors directly into a target-dtype frame — ~3x
-    # cheaper than a palette gather at 1080p — and black outside the
-    # ROI comes free with the zero allocation.
-    image = _backend.zeros(xp, (height, width, 3), xp.uint16, device)
-    palette = _backend.astype(_backend.asarray(xp, expanded, device), xp.uint16)
+    # Built from broadcast arithmetic rather than written as strided slices
+    # into an allocation: a scatter is a materialized intermediate no
+    # compiler fuses away, and mutation puts immutable-array backends out
+    # of contract (§spec:backend-portability).
+    #
+    # A frame has only three kinds of row — even tile row, odd tile row,
+    # and blank — so the whole raster is three rows built at row width and
+    # one gather that selects among them per row. That keeps every
+    # elementwise pass at row scale and materializes the frame exactly
+    # once; masking the region of interest afterwards would cost a second
+    # full-frame pass, which measured an order of magnitude more than the
+    # gather.
+    palette = _backend.astype(_backend.asarray(xp, expanded, device), dtype)
+    cols = _backend.arange(xp, width, xp.int32, device).reshape(width, 1)
+    rows = _backend.arange(xp, height, xp.int32, device)
+    blank = _backend.zeros(xp, (1, 1), dtype, device)
 
-    y_end = min(roi.y2, height)
-    x_end = min(roi.x2, width)
-    if bool(np.all(expanded == expanded[0])):
-        # One distinct color: a single contiguous write renders the solid.
-        image[roi.y : y_end, roi.x : x_end, :] = palette[0]
-    else:
-        image[roi.y : y_end : 2, roi.x : x_end : 2, :] = palette[0]
-        image[roi.y + 1 : y_end : 2, roi.x : x_end : 2, :] = palette[1]
-        image[roi.y : y_end : 2, roi.x + 1 : x_end : 2, :] = palette[2]
-        image[roi.y + 1 : y_end : 2, roi.x + 1 : x_end : 2, :] = palette[3]
-    return image
+    # Tile parity runs from the region's origin, so the pattern registers
+    # to the region rather than to the frame.
+    col_odd = (cols - roi.x) % 2 == 1
+    col_inside = (cols >= roi.x) & (cols < min(roi.x2, width))
+    even_row = xp.where(col_inside, xp.where(col_odd, palette[2], palette[0]), blank)
+    odd_row = xp.where(col_inside, xp.where(col_odd, palette[3], palette[1]), blank)
+    rows_by_kind = xp.stack([even_row, odd_row, xp.zeros_like(even_row)])
+
+    row_inside = (rows >= roi.y) & (rows < min(roi.y2, height))
+    return rows_by_kind[xp.where(row_inside, (rows - roi.y) % 2, _BLANK_ROW)]
